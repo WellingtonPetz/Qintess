@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using MultiAccountBankAPI.Data;
 using MultiAccountBankAPI.Models;
 using System.Text;
@@ -35,7 +36,33 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "MultiAccountBankAPI", Version = "v1" });
+
+    // Adiciona o suporte ao botão "Authorize"
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "Insira o token JWT no formato: Bearer {seu_token}",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    // Faz o Swagger exigir o token JWT nas requisições protegidas
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+            },
+            new string[] {}
+        }
+    });
+});
 
 var app = builder.Build();
 
