@@ -11,21 +11,17 @@ using System.Text;
 
 namespace MultiAccountBankAPI.Controllers
 {
-    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
-    public class AccountController : ControllerBase
+    public class AccountController : BaseController
     {
         private readonly ApplicationDbContext _context;
-        private readonly IConfiguration _config;
 
-        public AccountController(ApplicationDbContext context, IConfiguration config)
+        public AccountController(ApplicationDbContext context, IConfiguration config) : base(config)
         {
             _context = context;
-            _config = config;
         }
 
-        [AllowAnonymous]
         [HttpPost("create")]
         public async Task<IActionResult> CreateAccount([FromBody] BankAccount account)
         {
@@ -46,7 +42,6 @@ namespace MultiAccountBankAPI.Controllers
 
             return Ok(new { message = "Conta criada com sucesso!", account });
         }
-        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> GetAccounts()
         {
@@ -62,7 +57,6 @@ namespace MultiAccountBankAPI.Controllers
             return Ok(accounts);
         }
 
-        [AllowAnonymous]
         [HttpDelete("{accountId}")]
         public async Task<IActionResult> DeleteAccount(int accountId)
         {
@@ -71,8 +65,12 @@ namespace MultiAccountBankAPI.Controllers
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized("Usuário não autenticado.");
 
-            var account = await _context.Accounts.FindAsync(accountId);
-            if (account == null || account.UserId != userId) return NotFound();
+            var account = await _context.Accounts
+                                .FirstOrDefaultAsync(a => a.Id == accountId && a.UserId == userId);
+
+            if (account == null)
+                return NotFound("Conta não encontrada ou não pertence ao usuário.");
+
 
             if (account.CurrentBalance > 0)
                 return BadRequest("A conta precisa estar com saldo 0 para ser excluída.");
@@ -80,40 +78,6 @@ namespace MultiAccountBankAPI.Controllers
             _context.Accounts.Remove(account);
             await _context.SaveChangesAsync();
             return Ok("Conta excluída com sucesso.");
-        }
-
-        private string GetUserIdFromToken()
-        {
-            var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
-            var principal = ValidateToken(token);
-            var userId = principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            return userId;
-        }
-
-        private ClaimsPrincipal ValidateToken(string token)
-        {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var validationParameters = new TokenValidationParameters
-            {
-                ValidateIssuer = true,
-                ValidateAudience = true,
-                ValidateLifetime = true,
-                ValidateIssuerSigningKey = true,
-                ValidIssuer = _config["Jwt:Issuer"],
-                ValidAudience = _config["Jwt:Audience"],
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]))
-            };
-
-            try
-            {
-                var principal = tokenHandler.ValidateToken(token, validationParameters, out SecurityToken validatedToken);
-                return principal;
-            }
-            catch
-            {
-                return null;
-            }
         }
     }
 }
