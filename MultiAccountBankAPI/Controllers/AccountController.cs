@@ -42,9 +42,9 @@ namespace MultiAccountBankAPI.Controllers
             if (account == null)
                 return BadRequest(new { message = "Dados inválidos" });
 
-            account.UserId = userId;
-            account.CurrentBalance = 0;
-            account.DateCreated = DateTime.UtcNow;
+            account.user_id = userId;
+            account.current_balance = 0;
+            account.date_created = DateTime.UtcNow;
 
             _context.Accounts.Add(account);
             await _context.SaveChangesAsync();
@@ -67,7 +67,7 @@ namespace MultiAccountBankAPI.Controllers
                 return Unauthorized("Usuário não autenticado.");
 
             var accounts = await _context.Accounts
-                .Where(a => a.UserId == userId)
+                .Where(a => a.user_id == userId)
                 .ToListAsync();
 
             return Ok(accounts);
@@ -106,13 +106,13 @@ namespace MultiAccountBankAPI.Controllers
                 return Unauthorized("Usuário não autenticado.");
 
             var account = await _context.Accounts
-                                .FirstOrDefaultAsync(a => a.Id == accountId && a.UserId == userId);
+                                .FirstOrDefaultAsync(a => a.id == accountId && a.user_id == userId);
 
             if (account == null)
                 return NotFound("Conta não encontrada ou não pertence ao usuário.");
 
 
-            if (account.CurrentBalance > 0)
+            if (account.current_balance > 0)
                 return BadRequest("A conta precisa estar com saldo 0 para ser excluída.");
 
             _context.Accounts.Remove(account);

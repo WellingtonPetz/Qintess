@@ -59,7 +59,7 @@ namespace MultiAccountBankAPI.Controllers
                 return Unauthorized("Usuário não autenticado.");
 
             var account = await _context.Accounts
-                .FirstOrDefaultAsync(a => a.Id == accountId && a.UserId == userId);
+                .FirstOrDefaultAsync(a => a.id == accountId && a.user_id == userId);
 
             if (account == null) return NotFound("Conta não encontrada.");
 
@@ -98,8 +98,8 @@ namespace MultiAccountBankAPI.Controllers
                 return Unauthorized("Usuário não autenticado.");
 
             var accounts = await _context.Accounts
-                .Where(a => a.UserId == userId)
-                .Select(a => new { a.AccountName, a.CurrentBalance })
+                .Where(a => a.user_id == userId)
+                .Select(a => new { a.account_name, a.current_balance })
                 .ToListAsync();
 
             return Ok(accounts);

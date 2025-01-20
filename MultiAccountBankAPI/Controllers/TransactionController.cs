@@ -79,15 +79,15 @@ namespace MultiAccountBankAPI.Controllers
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized("Usuário não autenticado.");
 
-            var account = await _context.Accounts.FindAsync(transaction.AccountId);
-            if (account == null || account.UserId != userId) return NotFound("Conta não encontrada.");
+            var account = await _context.Accounts.FindAsync(transaction.account_id);
+            if (account == null || account.user_id != userId) return NotFound("Conta não encontrada.");
 
-            if (transaction.Type == "Withdrawal" && account.CurrentBalance < transaction.Amount)
+            if (transaction.type == "Withdrawal" && account.current_balance < transaction.amount)
                 return BadRequest("Saldo insuficiente para saque.");
 
             // Aplicar a transação
-            account.CurrentBalance += (transaction.Type == "Deposit" ? transaction.Amount : -transaction.Amount);
-            transaction.TransactionDate = DateTime.UtcNow;
+            account.current_balance += (transaction.type == "Deposit" ? transaction.amount : -transaction.amount);
+            transaction.transaction_date = DateTime.UtcNow;
 
             _context.Transactions.Add(transaction);
             await _context.SaveChangesAsync();
@@ -131,7 +131,7 @@ namespace MultiAccountBankAPI.Controllers
                 return Unauthorized("Usuário não autenticado.");
 
             var transactions = await _context.Transactions
-                .Where(t => t.AccountId == accountId && _context.Accounts.Any(a => a.Id == accountId && a.UserId == userId))
+                .Where(t => t.account_id == accountId && _context.Accounts.Any(a => a.id == accountId && a.user_id == userId))
                 .ToListAsync();
 
             return Ok(transactions);

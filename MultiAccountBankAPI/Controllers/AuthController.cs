@@ -63,12 +63,12 @@ namespace MultiAccountBankAPI.Controllers
 
             var user = new ApplicationUser
             {
-                UserName = request.Email,
-                Email = request.Email,
-                Name = request.Name
+                UserName = request.email,
+                Email = request.email,
+                name = request.name
             };
 
-            var result = await _userManager.CreateAsync(user, request.Password);
+            var result = await _userManager.CreateAsync(user, request.password);
 
             if (!result.Succeeded)
                 return BadRequest(result.Errors);
@@ -82,7 +82,10 @@ namespace MultiAccountBankAPI.Controllers
         /// <param name="model">Credenciais do usuário (e-mail e senha).</param>
         /// <returns>
         /// - 200 OK: Retorna o token JWT.<br/>
+        /// - 400 Bad Request: Dados Inválido.
         /// - 401 Unauthorized: Credenciais inválidas.
+        /// - 404 Not Found: Usuário não encontrado.
+        /// 
         /// </returns>
         /// <remarks>
         /// **Exemplo de requisição:**
@@ -90,7 +93,7 @@ namespace MultiAccountBankAPI.Controllers
         ///     POST /api/auth/login
         ///     {
         ///        "email": "usuario@email.com",
-        ///        "password": "SenhaSegura123!"
+        ///        "password": "SENHA!"
         ///     }
         /// 
         /// **Exemplo de resposta:**
@@ -100,13 +103,25 @@ namespace MultiAccountBankAPI.Controllers
         ///     }
         /// </remarks>
         /// <response code="200">Retorna o token JWT</response>
+        /// <response code="400">Dados Inválidos</response>
         /// <response code="401">Credenciais inválidas</response>
+        /// <response code="404">Usuário não encontrado</response>
+        /// 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginModel model)
         {
-            var user = await _userManager.FindByEmailAsync(model.Email);
-            if (user == null || !(await _userManager.CheckPasswordAsync(user, model.Password)))
-                return Unauthorized();
+            if (model == null)
+                return BadRequest("Dados de login inválidos.");
+
+            var user = await _userManager.FindByEmailAsync(model.email);
+
+            if (user == null)
+                return NotFound("Usuário não encontrado.");
+
+            var isPasswordValid = await _userManager.CheckPasswordAsync(user, model.password);
+
+            if (!isPasswordValid)
+                return Unauthorized("Credenciais inválidas.");
 
             var token = GenerateJwtToken(user);
             return Ok(new { Token = token });

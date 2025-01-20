@@ -4,6 +4,6 @@
     {
         public class ApplicationUser : IdentityUser
         {
-            public string Name { get; set; } // Campo extra para armazenar o nome do usuário
+            public string name { get; set; } // Campo extra para armazenar o nome do usuário
         }
     }
