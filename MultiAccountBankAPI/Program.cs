@@ -47,12 +47,24 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-builder.Services.AddSwaggerGen(c =>
+builder.Services.AddSwaggerGen(options =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "MultiAccountBankAPI", Version = "v1" });
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "MultiAccountBankAPI",
+        Version = "v1",
+        Description = "API para gerenciamento de múltiplas contas bancárias",
+        Contact = new OpenApiContact
+        {
+            Name = "Wellington",
+            Email = "wellington.petz@gmail.com",
+            Url = new Uri("https://localhost:7000")
+        }
+    });
+
 
     // Adiciona o suporte ao botão "Authorize"
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "Insira o token JWT no formato: Bearer {seu_token}",
         Name = "Authorization",
@@ -62,7 +74,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 
     // Faz o Swagger exigir o token JWT nas requisições protegidas
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
             new OpenApiSecurityScheme
@@ -83,7 +95,10 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "MultiAccountBankAPI v1");
+    });
 }
 
 app.UseHttpsRedirection();

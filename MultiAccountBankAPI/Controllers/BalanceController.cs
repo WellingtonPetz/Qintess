@@ -6,24 +6,57 @@ using System.Security.Claims;
 
 namespace MultiAccountBankAPI.Controllers
 {
-    [Authorize]
+    /// <summary>
+    /// Controlador responsável pela consulta de saldo e resumo das contas do usuário.
+    /// </summary>
     [ApiController]
     [Route("api/balance")]
-    public class BalanceController : ControllerBase
+    public class BalanceController : BaseController
     {
         private readonly ApplicationDbContext _context;
-
-        public BalanceController(ApplicationDbContext context)
+        /// <summary>
+        /// Construtor do BalanceController.
+        /// </summary>
+        /// <param name="context">Contexto do banco de dados.</param>
+        /// <param name="config">Configurações da aplicação.</param>
+        public BalanceController(ApplicationDbContext context, IConfiguration config) : base(config)
         {
             _context = context;
         }
 
-        // 🔹 Consultar saldo de uma conta específica
+        /// <summary>
+        /// Obtém o saldo de uma conta específica do usuário autenticado.
+        /// </summary>
+        /// <param name="accountId">ID da conta a ser consultada.</param>
+        /// <returns>
+        /// - 200 OK: Retorna o saldo da conta.<br/>
+        /// - 401 Unauthorized: Usuário não autenticado.<br/>
+        /// - 404 Not Found: Conta não encontrada.
+        /// </returns>
+        /// <remarks>
+        /// **Exemplo de requisição:**
+        /// 
+        ///     GET /api/balance/1
+        /// 
+        /// **Exemplo de resposta:**
+        /// 
+        ///     {
+        ///        "balance": 2500.75
+        ///     }
+        /// </remarks>
+        /// <response code="200">Retorna o saldo da conta</response>
+        /// <response code="401">Usuário não autenticado</response>
+        /// <response code="404">Conta não encontrada</response>
         [HttpGet("{accountId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetBalance(int accountId)
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null) return Unauthorized();
+            var userId = GetUserIdFromToken();
+
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized("Usuário não autenticado.");
 
             var account = await _context.Accounts
                 .FirstOrDefaultAsync(a => a.Id == accountId && a.UserId == userId);
@@ -33,12 +66,36 @@ namespace MultiAccountBankAPI.Controllers
             return Ok(new { Balance = account.CurrentBalance });
         }
 
-        // 🔹 Resumo de todas as contas do usuário
+        /// <summary>
+        /// Obtém um resumo de todas as contas do usuário autenticado.
+        /// </summary>
+        /// <returns>
+        /// - 200 OK: Retorna a lista de contas e seus saldos.<br/>
+        /// - 401 Unauthorized: Usuário não autenticado.
+        /// </returns>
+        /// <remarks>
+        /// **Exemplo de requisição:**
+        /// 
+        ///     GET /api/balance/summary
+        /// 
+        /// **Exemplo de resposta:**
+        /// 
+        ///     [
+        ///        { "accountName": "Conta Corrente", "currentBalance": 1500.50 },
+        ///        { "accountName": "Poupança", "currentBalance": 5000.00 }
+        ///     ]
+        /// </remarks>
+        /// <response code="200">Retorna a lista de contas e seus saldos</response>
+        /// <response code="401">Usuário não autenticado</response>
         [HttpGet("summary")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> GetSummary()
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null) return Unauthorized();
+            var userId = GetUserIdFromToken();
+
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized("Usuário não autenticado.");
 
             var accounts = await _context.Accounts
                 .Where(a => a.UserId == userId)

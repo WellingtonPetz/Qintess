@@ -22,6 +22,15 @@ namespace MultiAccountBankAPI.Controllers
             _context = context;
         }
 
+
+        /// <summary>
+        /// Cria uma nova conta bancária.
+        /// </summary>
+        /// <param name="account">Objeto contendo os dados da conta</param>
+        /// <returns>Retorna mensagem de sucesso e a conta criada</returns>
+        /// <response code="200">Conta criada com sucesso</response>
+        /// <response code="400">Dados inválidos</response>
+        /// <response code="401">Usuário não autenticado</response>
         [HttpPost("create")]
         public async Task<IActionResult> CreateAccount([FromBody] BankAccount account)
         {
@@ -42,6 +51,13 @@ namespace MultiAccountBankAPI.Controllers
 
             return Ok(new { message = "Conta criada com sucesso!", account });
         }
+
+        /// <summary>
+        /// Obtém todas as contas do usuário autenticado.
+        /// </summary>
+        /// <returns>Lista de contas</returns>
+        /// <response code="200">Retorna as contas do usuário</response>
+        /// <response code="401">Usuário não autenticado</response>
         [HttpGet]
         public async Task<IActionResult> GetAccounts()
         {
@@ -57,7 +73,31 @@ namespace MultiAccountBankAPI.Controllers
             return Ok(accounts);
         }
 
+        /// <summary>
+        /// Exclui uma conta bancária do usuário autenticado.
+        /// </summary>
+        /// <param name="accountId">O ID da conta a ser excluída.</param>
+        /// <returns>
+        /// - 200 OK: Conta excluída com sucesso.<br/>
+        /// - 400 BadRequest: Conta precisa estar com saldo 0.<br/>
+        /// - 401 Unauthorized: Usuário não autenticado.<br/>
+        /// - 404 NotFound: Conta não encontrada ou não pertence ao usuário.
+        /// </returns>
+        /// <remarks>
+        /// Exemplo de requisição:
+        /// 
+        ///     DELETE /api/accounts/5
+        /// 
+        /// </remarks>
+        /// <response code="200">Conta excluída com sucesso</response>
+        /// <response code="400">A conta precisa estar com saldo 0 para ser excluída</response>
+        /// <response code="401">Usuário não autenticado</response>
+        /// <response code="404">Conta não encontrada ou não pertence ao usuário</response>
         [HttpDelete("{accountId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteAccount(int accountId)
         {
             var userId = GetUserIdFromToken();
